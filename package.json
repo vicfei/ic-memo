@@ -1,0 +1,11 @@
+{
+  "name": "ic-memo",
+  "version": "0.0.1",
+  "description": "IC-MEMO — the open investment-committee memo format. Versioned spec, examples, and the reference renderers (HTML single-page + dsh-ui inline card). Evidence-tagged debate, five-value verdict vocabulary, PASS as a first-class decision.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vicfei/ic-memo.git"
+  },
+  "keywords": ["ic-memo", "investment-committee", "decision-memo", "evidence-tags", "tradingagents", "dsh"]
+}
