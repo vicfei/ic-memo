@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IC-MEMO — the open investment-committee memo format</title>
+<style>
+body{max-width:860px;margin:2rem auto;padding:0 1.2rem;font:16px/1.65 Georgia,serif;color:#1a1a1a;background:#fdfdfb}
+h1{font-size:1.9rem;border-bottom:3px solid #1a6b3c;padding-bottom:.4rem}
+h2{font-size:1.35rem;margin-top:2.2rem;border-bottom:1px solid #ddd;padding-bottom:.25rem}
+pre{background:#f4f2ec;border:1px solid #e0dcd0;border-radius:6px;padding:1rem;overflow-x:auto;font:13px/1.5 ui-monospace,monospace;white-space:pre-wrap}
+td{border:1px solid #ddd;padding:.35rem .6rem;background:#fff;font-family:ui-monospace,monospace;font-size:.92em}
+table{border-collapse:collapse;margin:.8rem 0}
+li{margin:.3rem 0}
+.note{background:#eef7f1;border-left:4px solid #1a6b3c;padding:.7rem 1rem;font-style:italic}
+a{color:#1a6b3c}
+.badge{display:inline-block;background:#1a6b3c;color:#fff;padding:.15rem .6rem;border-radius:99px;font-size:.75rem;font-family:sans-serif;text-decoration:none;margin-right:.5rem}
+</style></head><body>
+<p><span class="badge">SPEC v0.2</span><a href="https://github.com/vicfei/ic-memo">GitHub · vicfei/ic-memo</a> · <a href="https://github.com/vicfei/dsh-TradingAgents">reference writer</a></p>
+<h1>IC-MEMO — the open investment-committee memo format</h1>
+<p class=note>**Spec v0.2** — extracted from production use (dsh-TradingAgents, 2026-11-16 → 11-22, dozens of live memos incl. the portfolio variant). An IC-MEMO is the durable, evidence-tagged record of a multi-role investment debate that ends in a disciplined verdict. It is designed to be **written by committees (human or agent), read by future committees, and settled by ledgers**.</p>
+<p>&gt;</p>
+<p class=note>Reference implementation: [vicfei/dsh-TradingAgents](https://github.com/vicfei/dsh-TradingAgents) (writer) · this repo (spec, validators, renderers). Stability: v0.2 fields never renamed, only added.</p>
+<h2>1. Document shape</h2>
+<p>Markdown for humans with **one machine block**: a fenced `yaml` header immediately after the H1.</p>
+<pre># IC-MEMO · &lt;TICKER&gt; · &lt;YYYY-MM-DD&gt;
+</pre>
+<p>ticker: &lt;string&gt;</p>
+<p>as_of: &lt;YYYY-MM-DD&gt;</p>
+<p>committee: &lt;string&gt;          # e.g. tradingagents/v1</p>
+<p>decision: &lt;verdict&gt;          # see §3</p>
+<p>confidence: &lt;int 0-100&gt;</p>
+<p>size_hint: &lt;string&gt;          # free-form, references [G#]</p>
+<p>invalidation: [&lt;string&gt;, …]  # conditions that force re-review, each cites tags</p>
+<pre>
+## 1 · 分析师纪要 …       # section names are conventional, not mandated
+## 2 · 多空辩论 …
+## 3 · 风控护栏 …
+## 4 · 组合经理裁决 …
+---
+*&lt;cost footer&gt;*</pre>
+<p>**Mandatory sections** (headings are free-form but the ROLES are fixed):</p>
+<p>analyst brief (facts), bull/bear debate (challenges + responses), risk</p>
+<p>guardrails, PM verdict. A memo missing any role&#x27;s output is invalid.</p>
+<h2>2. Evidence tags — the load-bearing rule</h2>
+<li>`[A#]` analyst facts · `[B#]` bull claims · `[R#]` bear rebuttals ·</li>
+<p>  `[G#]` guardrails · `[T#]` track-record lessons (re-injected history).</p>
+<li>**Every factual claim carries a tag; every tag is defined exactly once**</li>
+<p>  in the section that owns it; claims cite tags — `…[A2][G3]`.</p>
+<li>Numbers are **only allowed inside tagged claims** — no orphan figures.</li>
+<p>  A claim with no evidence citation is a spec violation, not a style issue.</p>
+<li>Optional `[X#-TICKER]` suffix in portfolio memos namespaces facts per name.</li>
+<h2>3. Verdict vocabulary (closed set, normalizable)</h2>
+<table><tr><td>verdict</td><td>meaning</td></tr></table>
+<table><tr><td>BUY / OVERWEIGHT / HOLD / UNDERWEIGHT / SELL</td><td>directed calls (settleable)</td></tr></table>
+<table><tr><td>PASS</td><td>**first-class abstention** — evidence insufficient or guardrails unresolved; never settles, never counts as a directional miss</td></tr></table>
+<table><tr><td>REVIEW</td><td>sentinel — out-of-vocabulary/missing decision, machine-normalized; banners the memo, never silently treated as PASS/HOLD</td></tr></table>
+<p>`confidence: 0-100` accompanies every verdict. A PASS with reasoning is a</p>
+<p>complete, valuable memo — abstention is a decision.</p>
+<h2>4. Guardrails vs decisions (the auditability spine)</h2>
+<p>Guardrails (`[G#]`) **constrain** the PM; they never decide. The verdict</p>
+<p>section must cite the guardrails that bound it; overruling one must be</p>
+<p>explicit and reasoned. A PM verdict with zero [G#] citations is invalid.</p>
+<h2>5. Portfolio variant</h2>
+<p>Same shape; the header carries `tickers: [...]`, `decision: DEPLOY | HOLD |</p>
+<p>PASS | REVIEW`, `weights: {&lt;ticker&gt;: &lt;pct&gt;}`, `cash_pct: &lt;pct&gt;` —</p>
+<p>**weights + cash must sum to 100**; a wrong total is flagged on the memo,</p>
+<p>never silently rescaled. Allocation debate cites `[A#-TICKER]`;</p>
+<p>guardrails include single-name cap, concentration limits, a</p>
+<p>stated-plainly correlation caveat when no correlation data is in evidence.</p>
+<h2>6. Footer &amp; disclosures (mandatory)</h2>
+<li>Cost footer: elapsed, model, temperature, data source(s) — reproducibility.</li>
+<li>**Not-investment-advice footer on every memo. No exceptions.**</li>
+<li>Synthetic/demo memos must be conspicuously marked (`ticker: DEMO` or an</li>
+<p>  explicit synthetic banner); synthetic memos never enter real ledgers.</p>
+<h2>7. Ledger interop (settlement contract)</h2>
+<p>An IC-MEMO is born settleable: `(ticker, as_of, decision, confidence)` is</p>
+<p>the ledger entry; point-in-time discipline belongs to the ledger (entry at</p>
+<p>first close strictly after `as_of`; never score the live bar; unresolved</p>
+<p>windows stay pending). The memo itself never contains outcome data —</p>
+<p>outcomes live in the ledger and re-enter future memos only as `[T#]`</p>
+<p>citations.</p>
+<h2>8. Conformance</h2>
+<p>A conformant tool: parses the yaml header, checks the closed verdict</p>
+<p>vocabulary (normalizing casing; rejecting out-of-vocabulary to REVIEW),</p>
+<p>validates tag uniqueness and citation integrity (cited tags exist), and</p>
+<p>renders without loss (single-file HTML; `dsh-ui` inline card). The</p>
+<p>reference validator/renderers live in this repo; dsh-TradingAgents is the</p>
+<p>reference writer.</p>
+<p class="note">Not investment advice. Contributions: <a href="https://github.com/vicfei/ic-memo/issues">issues</a>.</p>
+</body></html>
